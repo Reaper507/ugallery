@@ -1,3 +1,24 @@
+// Copyright (c) 2011 Alexander Sidorov
+// 
+// Permission is hereby granted, free of charge, to any person obtaining
+// a copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to
+// permit persons to whom the Software is furnished to do so, subject to
+// the following conditions:
+// 
+// The above copyright notice and this permission notice shall be
+// included in all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+// LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+// OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ 
 ( function ($) 
 {
   // unique id 
@@ -32,14 +53,28 @@
       controls_fade_to      : 0.7,
       fade_duration         : 1200,
       // animation
-      player                : true,   // show play button
+      player                : true,    // show play button
       play_btn              : "play.png",
       stop_btn              : "stop.png",
-      play_vpos             : -1,     // play/pause buttons voffset. -1 means controls_vpos - 5px
-      hide_controls         : true,   // hide left/right buttons during animation
-      show_duration         : 5000,   // make sure the value bigger then fade_duration
-      autostart             : false,  // autostart player
-      hide_playbtn_on_mout  : true,   // hide play / pause buttons on mouse out
+      play_vpos             : -1,      // play/pause buttons voffset. -1 means controls_vpos - 5px
+      hide_controls         : true,    // hide left/right buttons during animation
+      show_duration         : 5000,    // make sure the value bigger then fade_duration
+      autostart             : false,   // autostart player
+      hide_playbtn_on_mout  : true,    // hide play / pause buttons on mouse out
+      // descriptions
+      desc_pos              : "top",   // select between: 'top', 'bottom'
+      desc_align            : "right", // text-align
+      desc_height           : 20,      // description's DIV height
+      desc_custom_class     : null,    // user defined class for description's DIV
+      desc_custom_callback  : null,    // user defined function fired after showing each description
+      // counter
+      counter_enabled       : false,   // show image counter e.g.: 1/10
+      counter_pos           : "top",   // select between: 'top', 'bottom'
+      counter_align         : "left",  // text-align
+      counter_custom_class  : null,    // user defined class for counter's DIV
+      counter_custom_callback : null,  // user defined function fired after showing each image
+      counter_height        : -1,      // counter's DIV height, -1 means the same height as desc_height
+
       // thumbnails panel
       // disabled by default in current version and is not announced
       show_thumb            : false, 
@@ -69,6 +104,8 @@
         var go_forw_img_id  = get_uid();
         var play_img_id     = get_uid();
         var stop_img_id     = get_uid();
+        var desc_div_id     = get_uid();
+        var counter_div_id  = get_uid();
         // thumbnails
         var $thumbs         = obj.find("div.collection img");
         var thumb_panel_uid = get_uid();
@@ -159,8 +196,36 @@
           var X = direction ? 1 : N - 1;
           set_marks( (get_index_0() + X) % $kids.length );
           
+          // show description
+          show_description();
+
+          // show counter
+          if( options.counter_enabled )
+            show_counter();
+
           // preload next & prev images
           preload_neighbours();
+        };
+
+
+        // show description, invoke user-defined callback
+        var show_description = function() {
+          var text = $(gallery_id + " .view_pointer_0").attr("title");
+          $("#" + desc_div_id).text(text);
+          if( options.desc_custom_callback ) {
+            options.desc_custom_callback(get_index_0());
+          }
+        };
+
+
+        // show counter
+        var show_counter = function() {
+          var idx = get_index_0() + 1;
+          var cnt = $kids.length;
+          $("#" + counter_div_id).text(idx + "/" + cnt);
+          if( options.counter_custom_callback ) {
+            options.counter_custom_callback(idx - 1);
+          }
         };
 
 
@@ -207,11 +272,11 @@
           // insert images for showing pictures and fade animation
           obj.prepend("<div class=\"viewport\"></div>");
           $(gallery_id + " div.viewport").css(
-            { width    : obj.css("width"), 
-              height   : obj.css("height"),
-              position : "absolute",
-              left     : 0,
-              top      : 0 });
+            { width    :  obj.css("width"), 
+              height   :  obj.css("height"),
+              position :  "absolute",
+              left     :  0,
+              top      :  0 });
           $(gallery_id + " div.viewport").prepend(
             "<img id=\"" + first_image_id + "\" class=\"aniview\" />\n"
               + "<img id=\"" + second_image_id + "\" class=\"aniview\" />\n"
@@ -219,48 +284,103 @@
               + "<img id=\"" + go_back_img_id + "\" src=\"" + options.backward_btn + "\" />\n"
               + "<img id=\"" + play_img_id + "\" src=\"" + options.play_btn + "\" />\n"
               + "<img id=\"" + stop_img_id + "\" src=\"" + options.stop_btn + "\" />\n"
+              + "<div id=\"" + desc_div_id + "\" class=\"ug_desc" + 
+              (options.desc_custom_class ? (" " + options.desc_custom_class) : "")
+              + "\"></div>\n"
+              + "<div id=\"" + counter_div_id + "\" class=\"ug_counter" + 
+              (options.counter_custom_class ? (" " + options.counter_custom_class) : "")
+              + "\"></div>\n"
           );
 
           // setup viewport images
-          $("#" + first_image_id + ",#" + second_image_id).css(
-            { position: "absolute",
-              top:      0,
-              left:     0
-            });
+          $("#" + first_image_id + ",#" + second_image_id).css({ 
+            position  :  "absolute",
+            top       :  0,
+            left      :  0
+          });
 
           $("#" + second_image_id).css('opacity', 0);
 
           // set up controls
-          $("#" + go_forw_img_id).css(
-            { position:  "absolute",
-              right:     0,
-              top:       options.controls_vpos,
-              "z-index": 2, 
-              opacity:   options.controls_fade_from,
-              cursor:    "pointer" });
+          $("#" + go_forw_img_id).css({ 
+            position   :  "absolute",
+            right      :  0,
+            top        :  options.controls_vpos,
+            "z-index"  :  2, 
+            opacity    :  options.controls_fade_from,
+            cursor     :  "pointer" });
 
-          $("#" + go_back_img_id).css(
-            { position:  "absolute",
-              left:      0,
-              top:       options.controls_vpos,
-              "z-index": 2,
-              opacity:   options.controls_fade_from,
-              cursor:    "pointer" });
+          $("#" + go_back_img_id).css({ 
+            position   :  "absolute",
+            left       :  0,
+            top        :  options.controls_vpos,
+            "z-index"  :  2,
+            opacity    :  options.controls_fade_from,
+            cursor     :  "pointer" });
 
 
-          // set default value
+          // set default values up
           if( options.play_vpos==-1 )
             options.play_vpos = options.controls_vpos - 5;
+          if( options.counter_height==-1 )
+            options.counter_height = options.desc_height;
 
 
-          $("#" + play_img_id + ",#" + stop_img_id).css(
-            { position:  "absolute",
-              display:   "none",
-              left:      (obj.width() / 2 - 28), 
-              top:       options.play_vpos,
-              "z-index": 2,
-              opacity:   options.controls_fade_from,
-              cursor:    "pointer" });
+          // play/pause buttons
+          $("#" + play_img_id + ",#" + stop_img_id).css({
+            position   :  "absolute",
+            display    :  "none",
+            left       :  (obj.width() / 2 - 28), 
+            top        :  options.play_vpos,
+            "z-index"  :  2,
+            opacity    :  options.controls_fade_from,
+            cursor     :  "pointer" });
+
+
+          // descriptions area
+          $("#" + desc_div_id).css({ 
+            position     :  "absolute",
+            width        :  obj.width(),
+            height       :  options.desc_height,
+            "text-align" :  options.desc_align });
+          switch( options.desc_pos ) {
+          case "top":
+            $("#" + desc_div_id).css({
+              left          :  0,
+              top           :  -options.desc_height - 2,
+            });
+            break;
+          case "bottom":
+            $("#" + desc_div_id).css({
+              left          :  0,
+              bottom        :  -options.desc_height - 2,
+            });
+            break;
+          }
+
+
+          // counter area
+          if( options.counter_enabled ) {
+            $("#" + counter_div_id).css({ 
+              position     :  "absolute",
+              width        :  obj.width(),
+              height       :  options.counter_height,
+              "text-align" :  options.counter_align });
+          }
+          switch( options.counter_pos ) {
+          case "top":
+            $("#" + counter_div_id).css({
+              left          :  0,
+              top           :  -options.counter_height - 2,
+            });
+            break;
+          case "bottom":
+            $("#" + counter_div_id).css({
+              left          :  0,
+              bottom        :  -options.counter_height - 2,
+            });
+            break;
+          }
 
 
           // show play button
@@ -286,6 +406,12 @@
 
           // setup marks
           set_marks(0);
+
+          // show description
+          show_description();
+
+          if( options.counter_enabled )
+            show_counter();
 
           // preload prev & next images
           preload_neighbours();
