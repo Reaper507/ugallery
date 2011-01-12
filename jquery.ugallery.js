@@ -30,7 +30,16 @@
       control_fade_duration : 300,
       controls_fade_from    : 0.2,
       controls_fade_to      : 0.7,
-      fade_duration         : 1000,
+      fade_duration         : 1200,
+      // animation
+      player                : true,   // show play button
+      play_btn              : "play.png",
+      stop_btn              : "stop.png",
+      play_vpos             : -1,     // play/pause buttons voffset. -1 means controls_vpos - 5px
+      hide_controls         : true,   // hide left/right buttons during animation
+      show_duration         : 5000,   // make sure the value bigger then fade_duration
+      autostart             : false,  // autostart player
+      hide_playbtn_on_mout  : true,   // hide play / pause buttons on mouse out
       // thumbnails panel
       // disabled by default in current version and is not announced
       show_thumb            : false, 
@@ -58,6 +67,8 @@
         var second_image_id = get_uid();
         var go_back_img_id  = get_uid();
         var go_forw_img_id  = get_uid();
+        var play_img_id     = get_uid();
+        var stop_img_id     = get_uid();
         // thumbnails
         var $thumbs         = obj.find("div.collection img");
         var thumb_panel_uid = get_uid();
@@ -72,6 +83,7 @@
           $(gallery_id + " .view_pointer_next").removeClass("view_pointer_next");
           $(gallery_id + " .view_pointer_prev").removeClass("view_pointer_prev");
         };
+
 
         // returns index of current element
         var get_index_0 = function() {
@@ -152,6 +164,42 @@
         };
 
 
+        var animation_state = false;
+        var toggle_animation = function() {
+          animation_state = !animation_state;
+          if( animation_state ) {
+            $("#" + play_img_id).css("display", "none");
+            $("#" + stop_img_id).css("display", "block");
+            show_next(true);
+            setTimeout(animation_tick, options.show_duration);
+            show_buttons(false);
+          }
+          else {
+            $("#" + play_img_id).css("display", "block");
+            $("#" + stop_img_id).css("display", "none");
+            show_buttons(true);
+          }
+        };
+
+        
+        var animation_tick = function() {
+          if( animation_state ) {
+            show_next(true);
+            setTimeout(animation_tick, options.show_duration);
+            show_buttons(false);
+          }
+          else {
+            show_buttons(true);
+          }
+        };
+
+
+        var show_buttons = function(state) {
+          var display = state ? "block" : "none";
+          $("#" + go_forw_img_id + ",#" + go_back_img_id).css("display", display);
+        };
+
+
         // initialize
         var init = function() {
           $(gallery_id).css("height", obj.css("height"));
@@ -169,6 +217,8 @@
               + "<img id=\"" + second_image_id + "\" class=\"aniview\" />\n"
               + "<img id=\"" + go_forw_img_id + "\" src=\"" + options.forward_btn + "\" />\n"
               + "<img id=\"" + go_back_img_id + "\" src=\"" + options.backward_btn + "\" />\n"
+              + "<img id=\"" + play_img_id + "\" src=\"" + options.play_btn + "\" />\n"
+              + "<img id=\"" + stop_img_id + "\" src=\"" + options.stop_btn + "\" />\n"
           );
 
           // setup viewport images
@@ -197,10 +247,33 @@
               opacity:   options.controls_fade_from,
               cursor:    "pointer" });
 
+
+          // set default value
+          if( options.play_vpos==-1 )
+            options.play_vpos = options.controls_vpos - 5;
+
+
+          $("#" + play_img_id + ",#" + stop_img_id).css(
+            { position:  "absolute",
+              display:   "none",
+              left:      (obj.width() / 2 - 28), 
+              top:       options.play_vpos,
+              "z-index": 2,
+              opacity:   options.controls_fade_from,
+              cursor:    "pointer" });
+
+
+          // show play button
+          if( options.player ) {
+            $("#" + play_img_id).css("display", "block");
+          }
+            
+
           // controls animation
           if( options.animate_controls ) {
 
-            $("#"+ go_forw_img_id + ",#" + go_back_img_id).hover(
+            $("#"+ go_forw_img_id + ",#" + go_back_img_id + ",#" + 
+              play_img_id + ",#" + stop_img_id).hover(
               function(e) { 
                 $(this).animate(
                   {opacity: options.controls_fade_to}, 
@@ -298,6 +371,36 @@
         $("#" + go_forw_img_id).click( function() { show_next(true); } );
         $("#" + go_back_img_id).click( function() { show_next(false); } );
 
+
+        // bind animation
+        $("#" + play_img_id + ",#" + stop_img_id).click( 
+          function() {   
+            if( options.player )
+              toggle_animation();
+          });          
+
+        if( options.player && options.autostart )  {
+          animation_state = !animation_state;
+          $("#" + play_img_id).css("display", "none");
+          $("#" + stop_img_id).css("display", "block");
+          setTimeout(animation_tick, options.show_duration);
+          show_buttons(false);
+        }
+
+        // hide play / pause buttons on mouseOut
+        if( options.hide_playbtn_on_mout ) {
+
+          $("#" + play_img_id + ",#" + stop_img_id).css("top", "-1000px"); 
+
+          $(gallery_id).mouseout(
+            function() {
+              $("#" + play_img_id + ",#" + stop_img_id).css("top", "-1000px"); 
+            });
+          $(gallery_id).mouseover(
+            function() {
+              $("#" + play_img_id + ",#" + stop_img_id).css("top", options.play_vpos); 
+            });
+        }
         
         var intervalID;
         $(gallery_id + " .thumbs").mousemove(
