@@ -18,6 +18,7 @@
 // LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
  
 ( function ($) 
 {
@@ -43,40 +44,62 @@
 
     // options
     var defaults = {
-      // viewport window
-      forward_btn           : "right.gif",
-      backward_btn          : "left.gif",
-      controls_vpos         : 150,
-      animate_controls      : true,
-      control_fade_duration : 300,
-      controls_fade_from    : 0.2,
-      controls_fade_to      : 0.7,
-      fade_duration         : 1200,
-      // animation
-      player                : true,    // show play button
-      play_btn              : "play.png",
-      stop_btn              : "stop.png",
-      play_vpos             : -1,      // play/pause buttons voffset. -1 means controls_vpos - 5px
-      hide_controls         : true,    // hide left/right buttons during animation
-      show_duration         : 5000,    // make sure the value bigger then fade_duration
-      autostart             : false,   // autostart player
-      hide_playbtn_on_mout  : true,    // hide play / pause buttons on mouse out
-      // descriptions
-      desc_pos              : "top",   // select between: 'top', 'bottom'
-      desc_align            : "right", // text-align
-      desc_height           : 20,      // description's DIV height
-      desc_custom_class     : null,    // user defined class for description's DIV
-      desc_custom_callback  : null,    // user defined function fired after showing each description
-      // counter
-      counter_enabled       : false,   // show image counter e.g.: 1/10
-      counter_pos           : "top",   // select between: 'top', 'bottom'
-      counter_align         : "left",  // text-align
-      counter_custom_class  : null,    // user defined class for counter's DIV
-      counter_custom_callback : null,  // user defined function fired after showing each image
-      counter_height        : -1,      // counter's DIV height, -1 means the same height as desc_height
 
-      // thumbnails panel
-      // disabled by default in current version and is not announced
+      // images' animation:
+      fade_duration         : 1200,   // image fade duration (ms)
+      
+      // forward/backward controls:
+      forward_btn           : "right.gif", // path to images
+      backward_btn          : "left.gif",
+      controls_vpos         : 150,    // offset from top (px)
+      animate_controls      : true,   // fade controls on mouse hover
+      control_fade_duration : 300,    // controls fade duration (ms)
+      controls_fade_from    : 0.2,    // initial opacity
+      controls_fade_to      : 0.7,    // highlight opacity
+
+      // autoplay:
+      player                : true,   // enable autoplay, show play button
+      play_btn              : "play.png",  // path to images
+      stop_btn              : "stop.png",
+      play_vpos             : -1,     // play button voffset (px)
+                                      // -1 means controls_vpos - 5px,
+                                      // modify this value if you use buttons
+                                      // with non standard heights
+                                      // (difference betweeen forward/backward
+                                      // buttons and play/pause is not 10px)
+      hide_controls         : true,   // hide forward/backward buttons during autoplay
+      show_duration         : 5000,   // delay before showing a next image
+      autostart             : false,  // autostart player
+      hide_playbtn_on_mout  : true,   // hide play/pause buttons on mouse out
+
+      // descriptions:
+      desc_pos              : "top",  // description's DIV position 
+                                      // [top | bottom | top-inside | bottom-inside ]
+      desc_bg_color         : "#000", // bg color for [top-inside | bottom-inside]
+      desc_bg_opacity       : 0.6,    // bg opacity for [top-inside | bottom-inside]
+      desc_align            : "right",// text-align [left | center | right]
+      desc_height           : 20,     // description's DIV height (px)
+      desc_custom_class     : null,   // user defined CSS class for description's DIV 
+      desc_custom_callback  : null,   // user defined function fired after showing
+                                      // each description, use it if you need to do
+                                      // something on each showing, e.g. if you use
+                                      // cufón, like here on site. The function
+                                      // received an index of the showed image
+                                      // as a parameter
+
+      // counter
+      counter_enabled       : false,  // show counter
+      counter_pos           : "top",  // counter's DIV position
+                                      // [top | bottom | top-inside | bottom-inside ]
+      counter_align         : "left", // text-align [left | center | right]
+      counter_custom_class  : null,   // user defined CSS class for counter's DIV
+      counter_custom_callback : null, // user defined function fired after showing
+                                      // each image
+      counter_height        : -1,     // counter's DIV height, -1 means the same
+                                      // height as a value of desc_height 
+
+
+      // thumbnails panel * disabled by default in current version and is not announced *
       show_thumb            : false, 
       thumb_position        : "right",
       thumb_bg              : "filmv.gif",
@@ -94,21 +117,24 @@
       function() { 
 
         // variables
-        var obj             = $(this);
-        var $kids           = obj.find("a");;
-        var gallery_id      = "#" + obj.attr("id");
+        var obj              = $(this);
+        var $kids            = obj.find("a");;
+        var gallery_id       = "#" + obj.attr("id");
         // viewport
-        var first_image_id  = get_uid(); 
-        var second_image_id = get_uid();
-        var go_back_img_id  = get_uid();
-        var go_forw_img_id  = get_uid();
-        var play_img_id     = get_uid();
-        var stop_img_id     = get_uid();
-        var desc_div_id     = get_uid();
-        var counter_div_id  = get_uid();
+        var first_image_id   = get_uid(); 
+        var second_image_id  = get_uid();
+        var go_back_img_id   = get_uid();
+        var go_forw_img_id   = get_uid();
+        var play_img_id      = get_uid();
+        var stop_img_id      = get_uid();
+        var desc_div_id      = get_uid();
+        var desc_inner_id    = get_uid();
+        var desc_black_id    = get_uid();
+        var counter_div_id   = get_uid();
+        var counter_inner_id = get_uid();
         // thumbnails
-        var $thumbs         = obj.find("div.collection img");
-        var thumb_panel_uid = get_uid();
+        var $thumbs          = obj.find("div.collection img");
+        var thumb_panel_uid  = get_uid();
         var thumb_img_offset1, thumb_img_offset2;
         var thumb_panel_size;
         // variables //
@@ -211,7 +237,7 @@
         // show description, invoke user-defined callback
         var show_description = function() {
           var text = $(gallery_id + " .view_pointer_0").attr("title");
-          $("#" + desc_div_id).text(text);
+          $("#" + desc_inner_id).text(text);
           if( options.desc_custom_callback ) {
             options.desc_custom_callback(get_index_0());
           }
@@ -222,7 +248,7 @@
         var show_counter = function() {
           var idx = get_index_0() + 1;
           var cnt = $kids.length;
-          $("#" + counter_div_id).text(idx + "/" + cnt);
+          $("#" + counter_inner_id).text(idx + "/" + cnt);
           if( options.counter_custom_callback ) {
             options.counter_custom_callback(idx - 1);
           }
@@ -284,12 +310,17 @@
               + "<img id=\"" + go_back_img_id + "\" src=\"" + options.backward_btn + "\" />\n"
               + "<img id=\"" + play_img_id + "\" src=\"" + options.play_btn + "\" />\n"
               + "<img id=\"" + stop_img_id + "\" src=\"" + options.stop_btn + "\" />\n"
-              + "<div id=\"" + desc_div_id + "\" class=\"ug_desc" + 
+              // description DIV
+              + "<div id=\"" + desc_div_id + "\" class=\"ug_desc_outer\">"
+              + "<div id=\"" + desc_inner_id + "\" class=\"ug_desc_inner" + 
               (options.desc_custom_class ? (" " + options.desc_custom_class) : "")
-              + "\"></div>\n"
-              + "<div id=\"" + counter_div_id + "\" class=\"ug_counter" + 
+              + "\"></div></div>\n"
+              + "<div id=\"" + desc_black_id + "\" class=\"ug_desc_black\"></div>\n"
+              // counter DIV
+              + "<div id=\"" + counter_div_id + "\" class=\"ug_counter_outer\">"  
+              + "<div id=\"" + counter_inner_id + "\" class=\"ug_counter_inner" + 
               (options.counter_custom_class ? (" " + options.counter_custom_class) : "")
-              + "\"></div>\n"
+              + "\"></div></div>\n"
           );
 
           // setup viewport images
@@ -338,22 +369,47 @@
 
 
           // descriptions area
+          $("#" + desc_black_id).css({ 
+            position           :  "absolute",
+            width              :  obj.width(),
+            height             :  options.desc_height,
+            "z-index"          :  4,
+            "background-color" :  options.desc_bg_color,
+            opacity            :  options.desc_bg_opacity });
           $("#" + desc_div_id).css({ 
-            position     :  "absolute",
-            width        :  obj.width(),
-            height       :  options.desc_height,
-            "text-align" :  options.desc_align });
+            position           :  "absolute",
+            width              :  obj.width(),
+            height             :  options.desc_height,
+            "z-index"          :  5,
+            "text-align"       :  options.desc_align });
+          $("#" + desc_inner_id).css({ 
+            "margin"           :  3 });
+
           switch( options.desc_pos ) {
-          case "top":
+          case "top" :
             $("#" + desc_div_id).css({
               left          :  0,
-              top           :  -options.desc_height - 2,
+              top           :  -options.desc_height - 2
+            });
+            $("#" + desc_black_id).css("display", "none");
+            break;
+          case "top-inside" :
+            $("#" + desc_div_id + ",#" + desc_black_id).css({
+              left               :  0,
+              top                :  0
             });
             break;
-          case "bottom":
+          case "bottom" :
             $("#" + desc_div_id).css({
               left          :  0,
-              bottom        :  -options.desc_height - 2,
+              bottom        :  -options.desc_height - 2
+            });
+            $("#" + desc_black_id).css("display", "none");
+            break;
+          case "bottom-inside" :
+            $("#" + desc_div_id + ",#" + desc_black_id).css({
+              left               :  0,
+              bottom             :  0
             });
             break;
           }
@@ -365,19 +421,34 @@
               position     :  "absolute",
               width        :  obj.width(),
               height       :  options.counter_height,
+              "z-index"    :  5,
               "text-align" :  options.counter_align });
+            $("#" + counter_inner_id).css({ 
+              "margin"           :  3 });
           }
           switch( options.counter_pos ) {
           case "top":
             $("#" + counter_div_id).css({
               left          :  0,
-              top           :  -options.counter_height - 2,
+              top           :  -options.counter_height - 2
+            });
+            break;
+          case "top-inside" :
+            $("#" + counter_div_id).css({
+              left               :  0,
+              top                :  0
             });
             break;
           case "bottom":
             $("#" + counter_div_id).css({
               left          :  0,
-              bottom        :  -options.counter_height - 2,
+              bottom        :  -options.counter_height - 2
+            });
+            break;
+          case "bottom-inside" :
+            $("#" + counter_div_id).css({
+              left               :  0,
+              bottom             :  0
             });
             break;
           }
